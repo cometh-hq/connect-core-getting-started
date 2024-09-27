@@ -1,0 +1,8 @@
+{
+  "name": "@cometh/connect-core-getting-started",
+  "version": "0.0.1",
+  "description": "SDK Connect core examples",
+  "private": true,
+  "type": "module",
+  "license": "ISC"
+}
