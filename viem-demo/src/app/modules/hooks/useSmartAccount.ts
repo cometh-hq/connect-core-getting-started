@@ -23,7 +23,6 @@ export function useSmartAccount() {
     const apiKey = process.env.NEXT_PUBLIC_COMETH_API_KEY;
     const bundlerUrl = process.env.NEXT_PUBLIC_4337_BUNDLER_URL;
     const paymasterUrl = process.env.NEXT_PUBLIC_4337_PAYMASTER_URL;
-    const rpcUrl = process.env.NEXT_PUBLIC_RPC_URL;
 
     function displayError(message: string) {
         setConnectionError(message);
@@ -46,7 +45,6 @@ export function useSmartAccount() {
                 smartAccount = await createSafeSmartAccount({
                     apiKey,
                     chain: arbitrumSepolia,
-                    rpcUrl,
                     smartAccountAddress: localStorageAddress,
                     entryPoint: ENTRYPOINT_ADDRESS_V07,
                 });
@@ -54,7 +52,6 @@ export function useSmartAccount() {
                 smartAccount = await createSafeSmartAccount({
                     apiKey,
                     chain: arbitrumSepolia,
-                    rpcUrl,
                     entryPoint: ENTRYPOINT_ADDRESS_V07,
                 });
                 window.localStorage.setItem(
@@ -67,7 +64,6 @@ export function useSmartAccount() {
                 transport: http(paymasterUrl),
                 chain: arbitrumSepolia,
                 entryPoint: ENTRYPOINT_ADDRESS_V07,
-                rpcUrl,
             });
 
             const smartAccountClient = createSmartAccountClient({
@@ -79,7 +75,6 @@ export function useSmartAccount() {
                     sponsorUserOperation: paymasterClient.sponsorUserOperation,
                     gasPrice: paymasterClient.gasPrice,
                 },
-                rpcUrl,
             });
 
             setSmartAccount(smartAccountClient);
