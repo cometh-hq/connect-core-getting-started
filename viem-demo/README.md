@@ -18,9 +18,4 @@ export NEXT_PUBLIC_4337_BUNDLER_URL="https://bundler.cometh.io/421614?apikey=YOU
 export NEXT_PUBLIC_4337_PAYMASTER_URL="https://paymaster.cometh.io/421614?apikey=YOUR_API_KEY"
 ```
 
-Update to the viem chain link to your apiKey on the following components (by default it is arbitrumSepolia):
-- `src/app/modules/hooks/useSmartAccount.ts`
-- `src/app/components/Transaction.tsx`
-
-
 After the successfull installation of the packages and the chain update, run: `bun dev`
