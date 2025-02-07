@@ -230,7 +230,7 @@ export default function RecoveryPage() {
             })
             api.defaults.headers.common["apisecret"] = process.env.NEXT_PUBLIC_COMETH_API_SECRET
 
-            await api.post(`recovery/finalize-with-shared`, {
+            await api.post(`recovery/finalize`, {
                 chainId: process.env.NEXT_PUBLIC_CHAIN_ID,
                 walletAddress: state.smartAccount.address,
             })
