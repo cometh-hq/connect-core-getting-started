@@ -5,25 +5,26 @@ import {
     createSafeSmartAccount,
     createSmartAccountClient,
     createComethPaymasterClient,
-    createNewSignerWithAccountAddress, type ComethSafeSmartAccount, type ComethSmartAccountClient,
+    createNewSignerWithAccountAddress, ENTRYPOINT_ADDRESS_V07,
 } from "@cometh/connect-sdk-4337"
 import { createPublicClient, http } from "viem"
 import { arbitrumSepolia } from "viem/chains"
 import axios from "axios"
+import {ENTRYPOINT_ADDRESS_V06} from "permissionless";
 
 const RECOVERY_DELAY = 3600
 const LOCAL_STORAGE_KEY = 'recoveryDemo'
 
 interface RecoveryState {
-    smartAccount: ComethSafeSmartAccount | null
-    smartAccountClient: ComethSmartAccountClient | null
+    smartAccount: any | null
+    smartAccountClient: any | null
     status: 'initial' | 'initialized' | 'setupComplete' | 'recoveryStarted' | 'recoveryComplete'
     message: string
     remainingTime: number | null
 }
 
 interface SavedState {
-    smartAccount: ComethSafeSmartAccount | null
+    smartAccount: any | null
     status: RecoveryState['status']
 }
 
@@ -99,29 +100,27 @@ export default function RecoveryPage() {
 
             const safeSmartAccount = await createSafeSmartAccount({
                 apiKey,
-                publicClient,
                 chain,
+                entryPoint: ENTRYPOINT_ADDRESS_V07,
                 baseUrl,
             })
 
             const paymasterClient = createComethPaymasterClient({
                 transport: http(paymasterUrl),
                 chain,
-                publicClient,
+                entryPoint: ENTRYPOINT_ADDRESS_V07,
             })
 
             const smartAccClient = createSmartAccountClient({
                 account: safeSmartAccount,
-                chain,
-                paymaster: paymasterClient,
+                entryPoint: ENTRYPOINT_ADDRESS_V07,
+                chain: chain,
                 bundlerTransport: http(bundlerUrl),
-                userOperation: {
-                    estimateFeesPerGas: async () => {
-                        return await paymasterClient.getUserOperationGasPrice()
-                    },
+                middleware: {
+                    sponsorUserOperation: paymasterClient.sponsorUserOperation,
+                    gasPrice: paymasterClient.gasPrice,
                 },
-                publicClient,
-            })
+            });
 
             const newState = {
                 smartAccount: safeSmartAccount,
@@ -166,6 +165,60 @@ export default function RecoveryPage() {
     }
 
     const startRecovery = async () => {
+        try {
+            if (!state.smartAccount) {
+                setState(prev => ({ ...prev, message: "Smart account not initialized!" }))
+                return
+            }
+
+            setState(prev => ({ ...prev, message: "Starting recovery..." }))
+
+            const signer = await createNewSignerWithAccountAddress({
+                apiKey: process.env.NEXT_PUBLIC_COMETH_API_KEY!,
+                smartAccountAddress: state.smartAccount.address,
+                baseUrl: process.env.NEXT_PUBLIC_BASE_URL!,
+            })
+
+            const api = axios.create({
+                baseURL: process.env.NEXT_PUBLIC_BASE_URL,
+            })
+            api.defaults.headers.common["apisecret"] = process.env.NEXT_PUBLIC_COMETH_API_SECRET
+
+            await api.post("recovery/start", {
+                chainId: process.env.NEXT_PUBLIC_CHAIN_ID,
+                walletAddress: state.smartAccount.address,
+                newOwner: signer.signerAddress,
+                publicKeyId: signer.publicKeyId,
+                publicKeyX: signer.publicKeyX,
+                publicKeyY: signer.publicKeyY,
+                deviceData: signer.deviceData,
+            })
+
+            const newState = {
+                status: 'recoveryStarted' as const,
+                remainingTime: RECOVERY_DELAY,
+                message: "Recovery process started. Please wait 1 hour before finalizing."
+            }
+
+            setState(prev => ({ ...prev, ...newState }))
+            saveState(newState)
+        } catch (error) {
+            console.error(error)
+            if (axios.isAxiosError(error)) {
+                setState(prev => ({
+                    ...prev,
+                    message: error.response?.data?.message || "An unexpected error occurred."
+                }))
+            } else {
+                setState(prev => ({
+                    ...prev,
+                    message: "An unexpected error occurred."
+                }))
+            }
+        }
+    }
+
+    const startRecoveryWithShared = async () => {
         try {
             if (!state.smartAccount) {
                 setState(prev => ({ ...prev, message: "Smart account not initialized!" }))
@@ -278,12 +331,20 @@ export default function RecoveryPage() {
                 )
             case 'setupComplete':
                 return (
-                    <button
-                        onClick={startRecovery}
-                        className="bg-gray-800 text-white px-6 py-3 rounded-lg hover:bg-gray-700 transition-colors"
-                    >
-                        Start Recovery
-                    </button>
+                    <div className="flex gap-4">
+                        <button
+                            onClick={startRecovery}
+                            className="bg-gray-800 text-white px-6 py-3 rounded-lg hover:bg-gray-700 transition-colors"
+                        >
+                            Start New Recovery
+                        </button>
+                        <button
+                            onClick={startRecoveryWithShared}
+                            className="bg-gray-800 text-white px-6 py-3 rounded-lg hover:bg-gray-700 transition-colors"
+                        >
+                            Start New Shared Recovery
+                        </button>
+                    </div>
                 )
             case 'recoveryStarted':
                 return (
@@ -303,12 +364,20 @@ export default function RecoveryPage() {
                 )
             default:
                 return (
-                    <button
-                        onClick={startRecovery}
-                        className="bg-gray-800 text-white px-6 py-3 rounded-lg hover:bg-gray-700 transition-colors"
-                    >
-                        Start New Recovery
-                    </button>
+                    <div className="flex gap-4">
+                        <button
+                            onClick={startRecovery}
+                            className="bg-gray-800 text-white px-6 py-3 rounded-lg hover:bg-gray-700 transition-colors"
+                        >
+                            Start New Recovery
+                        </button>
+                        <button
+                            onClick={startRecoveryWithShared}
+                            className="bg-gray-800 text-white px-6 py-3 rounded-lg hover:bg-gray-700 transition-colors"
+                        >
+                            Start New Shared Recovery
+                        </button>
+                    </div>
                 )
         }
     }

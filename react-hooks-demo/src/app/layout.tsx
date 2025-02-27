@@ -52,7 +52,6 @@ export default function RootLayout({
               bundlerUrl,
               apiKey,
               chain: chain,
-              baseUrl: process.env.NEXT_PUBLIC_BASE_URL,
             }} queryClient={queryClient}
           >
             <body className={inter.className}>{children}</body>
