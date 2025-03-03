@@ -52,8 +52,7 @@ export default function RootLayout({
               bundlerUrl,
               apiKey,
               chain: chain,
-            }}
-            queryClient={queryClient}
+            }} queryClient={queryClient}
           >
             <body className={inter.className}>{children}</body>
           </ConnectProvider>
